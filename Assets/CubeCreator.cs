@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class CubeCreator : MonoBehaviour
 {
@@ -18,6 +19,10 @@ public class CubeCreator : MonoBehaviour
     List<GameObject> cubes = new List<GameObject>();
     List<GameObject> colorCubes = new List<GameObject>();
 
+
+
+    //when true, rotation is disabled
+    bool isRotating;
 
     /*
     public struct edge {         
@@ -41,7 +46,10 @@ public class CubeCreator : MonoBehaviour
     //const ulong solvedEdges = 0b0000_0000_0000_0000_1011_1010_1001_1000_0111_0110_0101_0100_0011_0010_0001_0000;
 
 
-    GameObject bottomMiddle, topMiddle, leftMiddle, rightMiddle, frontMiddle, backMiddle;
+    //pivot is used for rotating, center is the middle of the entire cube
+    //and the parent of every piece
+    //cube parent is just for rotating it around in the view, it has no other function
+    GameObject cubeParent, pivot, center;
 
     private void OnValidate()
     {
@@ -57,6 +65,24 @@ public class CubeCreator : MonoBehaviour
     private void Start()
     {
 
+
+
+        //if cubeSides is even, we spawn a empty object that works as a pivot for the rotation of the middle pieces,
+        //and we spawn the middle pieces at the position of the pivot, so they are correctly rotated when rotating the pivot
+        bool isEven = cubeSides % 2 == 0;
+
+
+
+        cubeParent = new GameObject("Cube Parent");
+        cubeParent.transform.position = new Vector3((cubeSides - 1) * cubeSize * 0.5f, (cubeSides - 1) * cubeSize * 0.5f, (cubeSides - 1) * cubeSize * 0.5f);
+        center = new GameObject("Center");
+        center.transform.parent = cubeParent.transform;
+        center.transform.position = cubeParent.transform.position;
+        pivot = new GameObject("Pivot");
+        pivot.transform.parent = center.transform;
+        pivot.transform.position = center.transform.position;
+
+
         for (int x = 0; x < cubeSides; x++)
         {
             for (int y = 0; y < cubeSides; y++)
@@ -68,6 +94,8 @@ public class CubeCreator : MonoBehaviour
                     cube.GetComponent<Renderer>().material = cubeMaterial;
 
                     cubes.Add(cube);
+
+                    cube.transform.parent = center.transform;
 
 
                     bool isnotVisible = x > 0 && x < cubeSides - 1 && y > 0 && y < cubeSides - 1 && z > 0 && z < cubeSides - 1;
@@ -82,11 +110,13 @@ public class CubeCreator : MonoBehaviour
                         //this is a corner piece
                         corners.Add(new Vector3(x,y,z), cube);
                     }
-                    else if((x == 0 || x == cubeSides - 1) && (y == 0 || y == cubeSides - 1) || (x == 0 || x == cubeSides - 1) && (z == 0 || z == cubeSides - 1) || (y == 0 || y == cubeSides - 1) && (z == 0 || z == cubeSides - 1))
+                    else if((x == 0 || x == cubeSides - 1) && (y == 0 || y == cubeSides - 1) || (x == 0 || x == cubeSides - 1) 
+                        && (z == 0 || z == cubeSides - 1) || (y == 0 || y == cubeSides - 1) && (z == 0 || z == cubeSides - 1))
                     {
                         //this is an edge piece
                         edges.Add(new Vector3(x,y,z), cube);
                     }
+
 
 
                     if(x == 0)
@@ -101,12 +131,12 @@ public class CubeCreator : MonoBehaviour
 
                         OrientateColorLabel(-Vector3.right, colorCube.transform.up, colorCube);
 
+                        /*
                         if(cubeSides % 2 == 1 && y == cubeSides / 2 && z == cubeSides / 2)
                         {
                             //this is the center cube of this side
                             leftMiddle = cube;
-                        }
-
+                        }*/
                     }
 
                     if (x == cubeSides - 1)
@@ -120,10 +150,11 @@ public class CubeCreator : MonoBehaviour
 
                         OrientateColorLabel(Vector3.right, colorCube.transform.up, colorCube);
 
+                        /*
                         if(cubeSides % 2 == 1 && y == cubeSides / 2 && z == cubeSides / 2)
                         {
                             rightMiddle = cube;
-                        }
+                        }*/
                     }
 
                     if (y == 0)
@@ -138,10 +169,11 @@ public class CubeCreator : MonoBehaviour
 
                         OrientateColorLabel(-Vector3.up, colorCube.transform.up, colorCube);
 
+                        /*
                         if(cubeSides % 2 == 1 && x == cubeSides / 2 && z == cubeSides / 2)
                         {
                             bottomMiddle = cube;
-                        }
+                        }*/
                     
                     }
 
@@ -157,10 +189,11 @@ public class CubeCreator : MonoBehaviour
 
                         OrientateColorLabel(Vector3.up, colorCube.transform.up, colorCube);
 
+                        /*
                         if(cubeSides % 2 == 1 && x == cubeSides / 2 && z == cubeSides / 2)
                         {
                             topMiddle = cube;
-                        }
+                        }*/
                     }
 
                     if (z == 0)
@@ -174,10 +207,11 @@ public class CubeCreator : MonoBehaviour
                         colorCubes.Add(colorCube);
                         OrientateColorLabel(-Vector3.forward, colorCube.transform.up, colorCube);
 
+                        /*
                         if(cubeSides % 2 == 1 && x == cubeSides / 2 && y == cubeSides / 2)
                         {
                             frontMiddle = cube;
-                        }
+                        }*/
                     }
 
 
@@ -192,11 +226,11 @@ public class CubeCreator : MonoBehaviour
                         colorCubes.Add(colorCube);
 
                         OrientateColorLabel(Vector3.forward, colorCube.transform.up, colorCube);
-
+                        /*
                         if(cubeSides % 2 == 1 && x == cubeSides / 2 && y == cubeSides / 2)
                         {
                             backMiddle = cube;
-                        }
+                        }*/
                     }
 
                 }
@@ -215,231 +249,132 @@ public class CubeCreator : MonoBehaviour
     {
         if(Vector3.Dot(direction,Vector3.up) < 0.9f)
         {
-            Vector3 cross = Vector3.Cross(direction, upDirection);
+            if(Vector3.Dot(direction, Vector3.up) < -0.9f)
+            {
+                colorCube.transform.Rotate(Vector3.right, 180);
+            }
+            else
+            {
+                Vector3 cross = Vector3.Cross(upDirection, direction);
 
-            colorCube.transform.Rotate(cross,90);
+                colorCube.transform.Rotate(cross, 90);
+            }
         }
     }
 
 
-    public void Rotate(string rotationType)
+
+    public void Rotate(string rotation)
     {
-        switch (rotationType)
+        bool clockwise = !rotation.Contains("'");
+        rotation = rotation.Replace("'","");
+
+        Vector3 axis = rotation switch
         {
-            case "R":
+            "U" => cubeParent.transform.up,
+            "D" => -cubeParent.transform.up,
+            "R" => cubeParent.transform.right,
+            "L" => -cubeParent.transform.right,
+            "F" => -cubeParent.transform.forward,
+            "B" => cubeParent.transform.forward,
+            "x" => cubeParent.transform.right,
+            "y" => cubeParent.transform.up,
+            "z" => -cubeParent.transform.forward,
+            _ => Vector3.zero
+        };
 
+        bool wholeCube = rotation switch
+        {
+            "x" => true,
+            "y" => true,
+            "z" => true,
+            _ => false
+        };
+            
+        if(axis == Vector3.zero) { return; }
 
-                TurnR();
-               //edges = (edges & (0b1111 << 4)) << (4*4) | (edges & (0b1111 << (5*4))) >> (4*4) | (edges & (0b1111 << 5 * 4) >> 4*4 ) | (edges & (0b1111 << (8* 4)) >> 4*4);
-
-
-                break;
-            case "U":
-                TurnU();
-                break;
-            default: break;
+        //dont rotate if is rotating is true
+        if(isRotating) 
+        {
+            rotationQueue.Add((axis, clockwise, wholeCube));
+        }
+        else
+        {
+            StartCoroutine(Rotate(axis, clockwise, wholeCube, 0.5f));
         }
     }
 
 
-    private void TurnR()
+
+    //make a queue of rotations to rotate multiple times in a row, and make the rotations wait for the previous one to finish before starting the next one
+    private List<(Vector3 axis, bool clockwise, bool wholeCube)> rotationQueue = new List<(Vector3 axis, bool clockwise, bool wholeCube)>();
+
+
+    IEnumerator Rotate( Vector3 axis, bool clockwise, bool wholeCube, float duration = 0.5f)
     {
-        List<GameObject> list = new List<GameObject>();
+        isRotating = true;
 
-        Dictionary<Vector3, GameObject> newEdges = new Dictionary<Vector3, GameObject>();
-        Dictionary<Vector3, GameObject> newCorners = new Dictionary<Vector3, GameObject>();
+        GameObject middleObj = pivot;
 
-        newEdges = new Dictionary<Vector3, GameObject>(edges);
-        newCorners = new Dictionary<Vector3, GameObject>(corners);
-
-        foreach (var cube in newEdges)
+        if (!wholeCube)
         {
-            if (cube.Key.x == cubeSides - 1)
+            List<GameObject> rotateCubes = new List<GameObject>();
+            foreach (GameObject cube in colorCubes)
             {
-                cube.Value.transform.parent = rightMiddle.transform;
-                Vector3 newKey = cube.Key;
-
-                if (cube.Key.y == cubeSides - 1)
+                if (Vector3.Dot(cube.transform.up, axis) > 0.9f)
                 {
-                     newKey = new Vector3(cube.Key.x, cube.Key.y - 1, cube.Key.z + 1);
+                    rotateCubes.Add(cube.transform.parent.gameObject);
                 }
-                else
+            }
+
+            foreach (GameObject cube in rotateCubes)
+            {
+                if (cube != middleObj)
                 {
-                    if (cube.Key.z == cubeSides - 1)
-                    {
-                        newKey = new Vector3(cube.Key.x, cube.Key.y - 1, cube.Key.z - 1);
-                    }
-                    else
-                    {
-                        if(cube.Key.y == 0)
-                        {
-                            newKey = new Vector3(cube.Key.x, cube.Key.y + 1, cube.Key.z - 1);
-                        }
-                        else
-                        {
-                            newKey = new Vector3(cube.Key.x, cube.Key.y + 1, cube.Key.z + 1);
-                        }
-                    }
+                    cube.transform.parent = middleObj.transform;
                 }
-
-                edges[newKey] = cube.Value;
-
-                list.Add(cube.Value);
             }
         }
-
-        foreach (var cube in newCorners)
+        else
         {
-            if (cube.Key.x == cubeSides - 1)
+            middleObj = center;
+        }
+
+
+
+        float elapsed = 0f;
+        Quaternion startRotation = middleObj.transform.localRotation;
+        Quaternion endRotation = startRotation * Quaternion.AngleAxis(clockwise ? 90 : -90, middleObj.transform.worldToLocalMatrix * axis);
+
+        while (elapsed < duration)
+        {
+            middleObj.transform.localRotation = Quaternion.Slerp(startRotation, endRotation, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        middleObj.transform.localRotation = endRotation;
+
+        if (!wholeCube)
+        {
+            foreach (GameObject cube in cubes)
             {
-                cube.Value.transform.parent = rightMiddle.transform;
-                list.Add(cube.Value);
-                Vector3 newKey = cube.Key;
-
-                if (cube.Key.y == cubeSides - 1)
-                {
-                    if (cube.Key.z == cubeSides - 1)
-                    {
-                        newKey = new Vector3(cube.Key.x, cube.Key.y - 2, cube.Key.z);
-                    }
-                    else
-                    {
-                        newKey = new Vector3(cube.Key.x, cube.Key.y, cube.Key.z + 2);
-                    }
-                }
-                else
-                {
-                    if (cube.Key.z == cubeSides - 1)
-                    {
-                        if(cube.Key.y == 0)
-                        {
-                            newKey = new Vector3(cube.Key.x, cube.Key.y, cube.Key.z - 2);
-                        }
-                        else
-                        {
-
-                           newKey = new Vector3(cube.Key.x, cube.Key.y - 2, cube.Key.z);
-                        }
-                    }
-                    else
-                    {
-                        newKey = new Vector3(cube.Key.x, cube.Key.y + 2, cube.Key.z);
-                    }
-                }
-
-                corners[newKey] = cube.Value;
-
+                cube.transform.parent = center.transform;
             }
+
+            middleObj.transform.localRotation = Quaternion.identity;
         }
 
-        rightMiddle.transform.Rotate(Vector3.right, 90);
-
-        foreach (var cube in list)
+        if(rotationQueue.Count > 0)
         {
-            cube.transform.parent = null;
+            var nextRotation = rotationQueue[0];
+            rotationQueue.RemoveAt(0);
+            StartCoroutine(Rotate(nextRotation.axis, nextRotation.clockwise, nextRotation.wholeCube, duration));
         }
-
+        else
+        {
+            isRotating = false;
+        }
     }
 
-    private void TurnU()
-    {
-        List<GameObject> list = new List<GameObject>();
-
-        Dictionary<Vector3, GameObject> newEdges = new Dictionary<Vector3, GameObject>();
-        Dictionary<Vector3, GameObject> newCorners = new Dictionary<Vector3, GameObject>();
-
-        newEdges = new Dictionary<Vector3, GameObject>(edges);
-        newCorners = new Dictionary<Vector3, GameObject>(corners);
-
-        foreach (var cube in newEdges)
-        {
-            if (cube.Key.y == cubeSides - 1)
-            {
-
-                Vector3 newKey = cube.Key;
-                cube.Value.transform.parent = topMiddle.transform;
-
-                if (cube.Key.x == cubeSides - 1)
-                {
-                    newKey = new Vector3(cube.Key.x - 1, cube.Key.y, cube.Key.z - 1);
-                }
-                else
-                {
-                    if (cube.Key.z == cubeSides - 1)
-                    {
-                        newKey = new Vector3(cube.Key.x + 1, cube.Key.y, cube.Key.z - 1);
-                    }
-                    else
-                    {
-                        if(cube.Key.x == 0)
-                        {
-                            newKey = new Vector3(cube.Key.x + 1, cube.Key.y, cube.Key.z + 1);
-                        }
-                        else
-                        {
-                            newKey = new Vector3(cube.Key.x - 1, cube.Key.y, cube.Key.z + 1);
-                        }
-                    }
-                }
-
-                edges[newKey] = cube.Value;
-
-                list.Add(cube.Value);
-
-            }
-        }
-
-        foreach (var cube in newCorners)
-        {
-            if (cube.Key.y == cubeSides - 1)
-            {
-                cube.Value.transform.parent = topMiddle.transform;
-                list.Add(cube.Value);
-
-                Vector3 newKey = cube.Key;
-
-                if (cube.Key.x == cubeSides - 1)
-                {
-                    if (cube.Key.z == cubeSides - 1)
-                    {
-                        newKey = new Vector3(cube.Key.x, cube.Key.y, cube.Key.z - 2);
-                    }
-                    else
-                    {
-                        newKey = new Vector3(cube.Key.x - 2, cube.Key.y, cube.Key.z);
-                    }
-                }
-                else
-                {
-                    if (cube.Key.z == cubeSides - 1)
-                    {
-                        if (cube.Key.x == 0)
-                        {
-                            newKey = new Vector3(cube.Key.x + 2, cube.Key.y, cube.Key.z);
-                        }
-                        else
-                        {
-
-                            newKey = new Vector3(cube.Key.x, cube.Key.y, cube.Key.z - 2);
-                        }
-                    }
-                    else
-                    {
-                        newKey = new Vector3(cube.Key.x, cube.Key.y, cube.Key.z + 2);
-                    }
-                }
-
-                corners[newKey] = cube.Value;
-
-            }
-        }
-
-        topMiddle.transform.Rotate(Vector3.up, 90);
-
-        foreach (var cube in list)
-        {
-            cube.transform.parent = null;
-        }
-
-    }
 }
